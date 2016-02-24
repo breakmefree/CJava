@@ -1,21 +1,19 @@
 package com.prac.interview.threads.producerconsumer;
 
 import java.nio.CharBuffer;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class CountingWorker implements Runnable {
 
 	private WordCountAndStatus counter;
-	ConcurrentLinkedQueue<CharBuffer> conQueue;
 
-	public CountingWorker(WordCountAndStatus counter, ConcurrentLinkedQueue<CharBuffer> conQueue) {
+	public CountingWorker(WordCountAndStatus counter) {
 		this.counter = counter;
-		this.conQueue = conQueue;
 	}
 
 	@Override
 	public void run() {
-		while (conQueue.peek() == null && !counter.isStatus()) {
+		System.out.println("START - Counting Worker");
+		while (counter.peekConQueue() == null && counter.getCurrStatus() != 'f') {
 			try {
 				Thread.sleep(200);
 			} catch (InterruptedException e) {
@@ -23,27 +21,27 @@ public class CountingWorker implements Runnable {
 				e.printStackTrace();
 			}
 			
-			while (conQueue.peek() != null || !counter.isStatus()) {
-				CharBuffer buff = conQueue.poll();
-				while (buff.hasRemaining()) {
+			while (counter.peekConQueue() != null || counter.getCurrStatus() != 'f') {
+				CharBuffer buff = counter.pollConQueue();
+				while (buff!= null && buff.hasRemaining()) {
 					char c = buff.get();
-					System.out.print(c);
+					//System.out.print(c);
 					if (c == ' ' || c == '\n')
 						counter.increment();
 				}
 			}
 		} // while outer
 
-		while (conQueue.peek() != null || !counter.isStatus()) {
-			CharBuffer buff = conQueue.poll();
-			while (buff.hasRemaining()) {
+		while (counter.peekConQueue() != null || counter.getCurrStatus() != 'f') {
+			CharBuffer buff = counter.pollConQueue();
+			while (buff != null && buff.hasRemaining()) {
 				char c = buff.get();
 				//System.out.print(c);
 				if (c == ' ' || c == '\n')
 					counter.increment();
 			}
 
-			while (conQueue.peek() == null && !counter.isStatus()) {
+			while (counter.peekConQueue() == null && counter.getCurrStatus() != 'f') {
 				try {
 					Thread.sleep(200);
 				} catch (InterruptedException e) {
@@ -52,6 +50,19 @@ public class CountingWorker implements Runnable {
 				}
 			}
 		} // Outer while
+		System.out.println("counting complete");
+		
+		// All files processed - setting the status to 'p' -> 'processed'
+		synchronized (counter) {
+			if(counter.peekConQueue() == null && counter.getCurrStatus() == 'f') {
+				System.out.println("Notify from counting worker*****************");
+				counter.setCurrStatus('p');
+				counter.notifyAll();
+			} else {
+				System.out.println("There is some problem counting worker*****************");
+			}
+		}
+		System.out.println("END - Counting Worker");
 	} // run()
 
 }

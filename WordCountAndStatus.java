@@ -1,5 +1,9 @@
 package com.prac.interview.threads.producerconsumer;
 
+import java.nio.CharBuffer;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+
 /**
  * Used as shared objects between threads for tracking the number of words counted.
  * All to check if the file reading is over from the disk.
@@ -10,7 +14,10 @@ package com.prac.interview.threads.producerconsumer;
 public class WordCountAndStatus {
 	
 	private int words; // Used to track total number of words read.
-	boolean status;	   // Used to track if the IOWorker is done with its job.
+	char currStatus;
+	ConcurrentLinkedQueue<CharBuffer> conQueue; // Used to enqueue the data read from the file
+	
+	static ExecutorService exeSWorker;
 
 	public int getWords() {
 		return words;
@@ -23,21 +30,44 @@ public class WordCountAndStatus {
 		words++;
 	}
 
-	/**
-	 * Used by FileProcWorker to track if IOWorker is done with reading files from disk.
-	 * @return
-	 */
-	public boolean isStatus() {
-		return status;
+	public char getCurrStatus() {
+		return currStatus;
 	}
 
 	/**
-	 * Set to 'false' when this object is initialized.
-	 * Later set to 'true' by IOWorker when it's job is done.
+	 * Set currStatus to 
+	 * i = 'init'
+	 * f = 'fetched'
+	 * p = 'processed'
 	 * 
-	 * @param status
+	 * @param currStatus
 	 */
-	public void setStatus(boolean status) {
-		this.status = status;
+	public void setCurrStatus(char currStatus) {
+		this.currStatus = currStatus;
 	}
+
+	public ConcurrentLinkedQueue<CharBuffer> getConQueue() {
+		return conQueue;
+	}
+
+	public void setConQueue(ConcurrentLinkedQueue<CharBuffer> conQueue) {
+		this.conQueue = conQueue;
+	}
+	
+	public CharBuffer pollConQueue() {
+		return conQueue.poll();
+	}
+
+	public void offerConQueue(CharBuffer cbuff) {
+		this.conQueue.offer(cbuff);
+	}
+	
+	public CharBuffer peekConQueue() {
+		return this.conQueue.peek();
+	}
+
+	public void setExeSWorker(ExecutorService exeSWorker) {
+		WordCountAndStatus.exeSWorker = exeSWorker;
+	}
+	
 }
