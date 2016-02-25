@@ -1,65 +1,51 @@
 package com.prac.interview.threads.producerconsumer;
 
+import static com.prac.interview.threads.producerconsumer.WordCountAndStatus.*;
+
 import java.nio.CharBuffer;
 
+import com.prac.interview.threads.producerconsumer.WordCountAndStatus.State;
+
+/**
+ * It reads data from the concurrent queue and counts the number of words in it.
+ * Before exit it updates its exit status to the shared object of class WordCountAndStatus.
+ * @author kshamanidhi
+ *
+ */
 public class CountingWorker implements Runnable {
 
-	private WordCountAndStatus counter;
+	private static WordCountAndStatus counter;
 
 	public CountingWorker(WordCountAndStatus counter) {
-		this.counter = counter;
+		CountingWorker.counter = counter;
 	}
 
 	@Override
 	public void run() {
 		System.out.println("START - Counting Worker");
-		while (counter.peekConQueue() == null && counter.getCurrStatus() != 'f') {
-			try {
-				Thread.sleep(200);
-			} catch (InterruptedException e) {
-				System.out.println("The CountingWorker thread has been interrupted, stop processing." + e);
-				e.printStackTrace();
-			}
-			
-			while (counter.peekConQueue() != null || counter.getCurrStatus() != 'f') {
-				CharBuffer buff = counter.pollConQueue();
-				while (buff!= null && buff.hasRemaining()) {
-					char c = buff.get();
-					//System.out.print(c);
-					if (c == ' ' || c == '\n')
-						counter.increment();
-				}
-			}
-		} // while outer
 
-		while (counter.peekConQueue() != null || counter.getCurrStatus() != 'f') {
-			CharBuffer buff = counter.pollConQueue();
+		if (peekConQueue() != null) {
+			CharBuffer buff = pollConQueue();
 			while (buff != null && buff.hasRemaining()) {
 				char c = buff.get();
-				//System.out.print(c);
-				if (c == ' ' || c == '\n')
-					counter.increment();
-			}
-
-			while (counter.peekConQueue() == null && counter.getCurrStatus() != 'f') {
-				try {
-					Thread.sleep(200);
-				} catch (InterruptedException e) {
-					System.out.println("The CountingWorker thread has been interrupted, stop processing." + e);
-					e.printStackTrace();
+				// System.out.print(c);
+				if (c == ' ' || c == '\n') {
+					incrementWordCount();
 				}
 			}
-		} // Outer while
-		System.out.println("counting complete");
-		
-		// All files processed - setting the status to 'p' -> 'processed'
+		} else {
+			System.out.println("The conQueue is empty");
+		}
+
+		//System.out.println("current job complete");
+
+		// All files processed - setting the status to COMPUTED
 		synchronized (counter) {
-			if(counter.peekConQueue() == null && counter.getCurrStatus() == 'f') {
-				System.out.println("Notify from counting worker*****************");
-				counter.setCurrStatus('p');
-				counter.notifyAll();
-			} else {
-				System.out.println("There is some problem counting worker*****************");
+			decrementCWJobTrack();
+			if (peekConQueue() == null && getCWJobCountTrack() == 0 && getCurrStatus() == State.FETCHED) {
+				setCurrStatus(State.COMPUTED);
+				System.out.println("All counting comlete! Great job!");
+				counter.notify();
 			}
 		}
 		System.out.println("END - Counting Worker");

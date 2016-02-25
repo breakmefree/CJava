@@ -2,7 +2,6 @@ package com.prac.interview.threads.producerconsumer;
 
 import java.nio.CharBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
 
 /**
  * Used as shared objects between threads for tracking the number of words counted.
@@ -12,62 +11,108 @@ import java.util.concurrent.ExecutorService;
  *
  */
 public class WordCountAndStatus {
+	/*
+	 * The list of standard states milestones used to tracking. 
+	 */
+	public enum State {
+		INIT, SCHEDULED, FETCHED, COMPUTED
+	}
+			
+		
+	private static int words; 			// Used to track total number of words read.
+	private static State currStatus;	//Used to track the current milestones achieved for overall jobs.
+	private static int ioJobCountTrack; //Used to track the currently executing IO jobs.
+	private static int cwJobCountTrack; //Used to track the currently executing Counting words jobs.
 	
-	private int words; // Used to track total number of words read.
-	char currStatus;
-	ConcurrentLinkedQueue<CharBuffer> conQueue; // Used to enqueue the data read from the file
-	
-	static ExecutorService exeSWorker;
+	private static ConcurrentLinkedQueue<CharBuffer> conQueue; // Used to enqueue the data read from the file
 
-	public int getWords() {
+	public static int getWords() {
 		return words;
 	}
 	
 	/**
 	 * Used to count all the words read till now by FileProcWorker.
 	 */
-	public synchronized void increment() {
+	public synchronized static void incrementWordCount() {
 		words++;
 	}
 
-	public char getCurrStatus() {
+	public static State getCurrStatus() {
 		return currStatus;
 	}
 
 	/**
 	 * Set currStatus to 
-	 * i = 'init'
-	 * f = 'fetched'
-	 * p = 'processed'
+	 *  INIT, SCHEDULED, FETCHED, COMPUTED
 	 * 
 	 * @param currStatus
 	 */
-	public void setCurrStatus(char currStatus) {
-		this.currStatus = currStatus;
+	public static void setCurrStatus(State currStatus) {
+		WordCountAndStatus.currStatus = currStatus;
 	}
 
-	public ConcurrentLinkedQueue<CharBuffer> getConQueue() {
+	/**
+	 * Gets the number of current IO jobs executing.
+	 * @return
+	 */
+	public static int getIoJobCountTrack() {
+		return ioJobCountTrack;
+	}
+
+	/**
+	 * Increments the current IO jobs executing by 1.
+	 */
+	public static void incrementIoJobTrack() {
+		WordCountAndStatus.ioJobCountTrack++;
+	}
+	
+	/**
+	 * Decrements the current IO jobs executing by 1.
+	 */
+	public static void decrementIoJobTrack() {
+		WordCountAndStatus.ioJobCountTrack--;
+	}
+
+	/**
+	 * Gets the number of currently executing IO jobs.
+	 * @return
+	 */
+	public static int getCWJobCountTrack() {
+		return cwJobCountTrack;
+	}
+
+	/**
+	 * Increments the currently executing Counting words jobs by 1.
+	 */
+	public static void incrementCWJobTrack() {
+		WordCountAndStatus.cwJobCountTrack++;
+	}
+	
+	/**
+	 * Decrements the number of currently executing Counting words jobs by 1.
+	 */
+	public static void decrementCWJobTrack() {
+		WordCountAndStatus.cwJobCountTrack--;
+	}
+
+	public static ConcurrentLinkedQueue<CharBuffer> getConQueue() {
 		return conQueue;
 	}
 
-	public void setConQueue(ConcurrentLinkedQueue<CharBuffer> conQueue) {
-		this.conQueue = conQueue;
+	public static void setConQueue(ConcurrentLinkedQueue<CharBuffer> conQueue) {
+		WordCountAndStatus.conQueue = conQueue;
 	}
 	
-	public CharBuffer pollConQueue() {
+	public static CharBuffer pollConQueue() {
 		return conQueue.poll();
 	}
 
-	public void offerConQueue(CharBuffer cbuff) {
-		this.conQueue.offer(cbuff);
+	public static void offerConQueue(CharBuffer cbuff) {
+		WordCountAndStatus.conQueue.offer(cbuff);
 	}
 	
-	public CharBuffer peekConQueue() {
-		return this.conQueue.peek();
-	}
-
-	public void setExeSWorker(ExecutorService exeSWorker) {
-		WordCountAndStatus.exeSWorker = exeSWorker;
+	public static CharBuffer peekConQueue() {
+		return WordCountAndStatus.conQueue.peek();
 	}
 	
 }
